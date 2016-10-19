@@ -216,9 +216,29 @@ class EmailForm(forms.Form):
         help_text='Designate an alternative email for this account',
     )
 
+    password = forms.CharField(
+        label=_('Current password'),
+        widget=forms.PasswordInput(),
+        help_text='You will need to enter your current account password to make changes.',
+        required=False,
+    )
+
     def __init__(self, user, *args, **kwargs):
         self.user = user
         super(EmailForm, self).__init__(*args, **kwargs)
+
+        needs_password = user.has_usable_password()
+
+        if not needs_password:
+            del self.fields['password']
+
+    def clean_password(self):
+        value = self.cleaned_data.get('password')
+        if value and not self.user.check_password(value):
+            raise forms.ValidationError('The password you entered is not correct.')
+        elif not value:
+            raise forms.ValidationError('You must confirm your current password to make changes.')
+        return value
 
     def save(self, commit=True):
 
