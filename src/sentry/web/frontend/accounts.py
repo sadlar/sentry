@@ -25,7 +25,7 @@ from social_auth.models import UserSocialAuth
 from sudo.decorators import sudo_required
 
 from sentry.models import (
-    UserEmail, LostPasswordHash, Project, UserOption, Authenticator
+    User, UserEmail, LostPasswordHash, Project, UserOption, Authenticator
 )
 from sentry.signals import email_verified
 from sentry.web.decorators import login_required, signed_auth_required
@@ -361,14 +361,9 @@ def disconnect_identity(request, identity_id):
 @login_required
 def show_emails(request):
     user = request.user
+    emails = user.emails.all()
+    email_form = EmailForm(user, request.POST or None)
     primary_email = UserEmail.get_primary_email(user)
-    alt_emails = user.emails.all().exclude(email=primary_email.email)
-
-    email_form = EmailForm(user, request.POST or None,
-        initial={
-            'primary_email': primary_email.email,
-        },
-    )
 
     if 'remove' in request.POST:
         email = request.POST.get('email')
@@ -376,29 +371,21 @@ def show_emails(request):
         del_email.delete()
         return HttpResponseRedirect(request.path)
 
+    if 'primary' in request.POST:
+        new_primary = request.POST.get('new_primary_email')
+        print new_primary
+        if new_primary != user.email:
+
+            user.email = new_primary
+            if not User.objects.filter(username__iexact=new_primary).exists():
+                user.username = user.email
+            user.save()
+            print user.email
+            print user.username
+        return HttpResponseRedirect(request.path)
+
     if email_form.is_valid():
-        old_email = user.email
 
-        email_form.save()
-
-        if user.email != old_email:
-            useroptions = UserOption.objects.filter(user=user, value=old_email)
-            for option in useroptions:
-                option.value = user.email
-                option.save()
-            UserEmail.objects.filter(user=user, email=old_email).delete()
-            try:
-                with transaction.atomic():
-                    user_email = UserEmail.objects.create(
-                        user=user,
-                        email=user.email,
-                    )
-            except IntegrityError:
-                pass
-            else:
-                user_email.set_hash()
-                user_email.save()
-            user.send_confirm_emails()
         alternative_email = email_form.cleaned_data['alt_email']
         # check if this alternative email already exists for user
         if alternative_email and not UserEmail.objects.filter(user=user, email=alternative_email):
@@ -425,8 +412,8 @@ def show_emails(request):
     context.update({
         'email_form': email_form,
         'primary_email': primary_email,
-        'alt_emails': alt_emails,
         'page': 'emails',
         'AUTH_PROVIDERS': auth.get_auth_providers(),
+        'emails': emails,
     })
     return render_to_response('sentry/account/emails.html', context, request)

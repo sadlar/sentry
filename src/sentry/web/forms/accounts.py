@@ -208,7 +208,6 @@ class ChangePasswordRecoverForm(forms.Form):
 
 
 class EmailForm(forms.Form):
-    primary_email = forms.EmailField(label=_('Primary Email'))
 
     alt_email = forms.EmailField(
         label=_('New Email'),
@@ -239,23 +238,6 @@ class EmailForm(forms.Form):
         elif not value:
             raise forms.ValidationError('You must confirm your current password to make changes.')
         return value
-
-    def save(self, commit=True):
-
-        if self.cleaned_data['primary_email'] != self.user.email:
-            new_username = self.user.email == self.user.username
-        else:
-            new_username = False
-
-        self.user.email = self.cleaned_data['primary_email']
-
-        if new_username and not User.objects.filter(username__iexact=self.user.email).exists():
-            self.user.username = self.user.email
-
-        if commit:
-            self.user.save()
-
-        return self.user
 
 
 class AccountSettingsForm(forms.Form):
