@@ -377,12 +377,16 @@ def show_emails(request):
         print new_primary
         if new_primary != user.email:
 
+            # update notification settings for those set to primary email with new primary email
+            options = UserOption.objects.filter(user=request.user, value=user.email)
+            for option in options:
+                option.value = new_primary
+                option.save()
+
             user.email = new_primary
             if not User.objects.filter(username__iexact=new_primary).exists():
                 user.username = user.email
             user.save()
-            print user.email
-            print user.username
         return HttpResponseRedirect(request.path)
 
     if email_form.is_valid():
