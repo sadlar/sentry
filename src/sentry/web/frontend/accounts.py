@@ -364,6 +364,7 @@ def show_emails(request):
     emails = user.emails.all()
     email_form = EmailForm(user, request.POST or None)
     primary_email = UserEmail.get_primary_email(user)
+    alt_emails = user.emails.all().exclude(email=primary_email.email)
 
     if 'remove' in request.POST:
         email = request.POST.get('email')
@@ -411,6 +412,7 @@ def show_emails(request):
     context = csrf(request)
     context.update({
         'email_form': email_form,
+        'alt_emails': alt_emails,
         'primary_email': primary_email,
         'page': 'emails',
         'AUTH_PROVIDERS': auth.get_auth_providers(),
