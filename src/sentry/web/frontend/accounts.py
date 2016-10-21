@@ -175,11 +175,15 @@ def account_settings(request):
 
         form.save()
 
-        # remove previously valid email address
+        # update notification settings for those set to primary email with new primary email
+        options = UserOption.objects.filter(user=user, value=old_email)
+        for option in options:
+            option.value = user.email
+            option.save()
+
         # TODO(dcramer): we should maintain validation here when we support
         # multiple email addresses
         if request.user.email != old_email:
-            UserEmail.objects.filter(user=user, email=old_email).delete()
             try:
                 with transaction.atomic():
                     user_email = UserEmail.objects.create(
@@ -374,7 +378,6 @@ def show_emails(request):
 
     if 'primary' in request.POST:
         new_primary = request.POST.get('new_primary_email')
-        print new_primary
         if new_primary != user.email:
 
             # update notification settings for those set to primary email with new primary email
@@ -383,8 +386,11 @@ def show_emails(request):
                 option.value = new_primary
                 option.save()
 
+            new_username = user.email == user.username
+
             user.email = new_primary
-            if not User.objects.filter(username__iexact=new_primary).exists():
+
+            if new_username and not User.objects.filter(username__iexact=new_primary).exists():
                 user.username = user.email
             user.save()
         return HttpResponseRedirect(request.path)
