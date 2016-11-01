@@ -1,5 +1,6 @@
 Version 8.11 (Unreleased)
 -------------------------
+- add Asana to supported auth backends in social auth (for plugins)
 
 Version.8.10
 ------------
