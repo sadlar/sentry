@@ -1,6 +1,8 @@
 Version 8.11 (Unreleased)
 -------------------------
 
+- Add configurable password validators to enforce password strength.
+
 Version.8.10
 ------------
 
