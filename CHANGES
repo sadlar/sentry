@@ -1,6 +1,13 @@
 Version 8.11 (Unreleased)
 -------------------------
 
+- Invalidate user sessions when changing password and 2fa settings.
+
+Schema Changes
+~~~~~~~~~~~~~~
+
+- Added ``User.session_nonce`` column.
+
 Version.8.10
 ------------
 
